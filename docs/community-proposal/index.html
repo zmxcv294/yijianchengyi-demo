@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模板社区 · 一键成艺（待确认原型）</title>
+<style>
+  :root { color-scheme:light; --ink:#162f29; --green:#175e49; --sub:#52665e; --line:#cdd8ce; --paper:#f7f7f0; }
+  * { box-sizing:border-box }
+  body { margin:0; color:var(--ink); background:var(--paper); font:16px/1.6 "Microsoft YaHei","PingFang SC",sans-serif }
+  button,input,select { font:inherit; color:inherit }
+  button,select { cursor:pointer }
+  button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible { outline:3px solid #a64a1d; outline-offset:3px }
+  [hidden] { display:none !important }
+  .wrap { max-width:1160px; margin:auto; padding:0 clamp(16px,4vw,52px) }
+  header { border-bottom:1px solid var(--line) }
+  header .wrap { display:flex; align-items:center; justify-content:space-between; padding-block:16px; gap:10px }
+  .brand { font:bold 22px "STSong","SimSun",serif; letter-spacing:.08em }
+  .mark { display:inline-block; width:20px; height:20px; margin-right:9px; vertical-align:-2px; border:2px solid currentColor; border-radius:50% 0; background:linear-gradient(135deg,transparent 48%,currentColor 49% 55%,transparent 56%) }
+  .badge,.type { font-size:13px; font-weight:600; color:var(--green) }
+  .badge { background:#e3edda; border-radius:20px; padding:4px 13px }
+  main { padding-block-end:40px }
+  .intro { padding:clamp(24px,4vw,48px) 0 20px }
+  h1,h2,h3,p { margin:0 }
+  h1 { font:bold clamp(38px,6vw,68px)/1.15 "STSong","SimSun",serif; letter-spacing:.04em }
+  .intro p,.sub { color:var(--sub); margin-top:7px }
+  .filters { display:flex; flex-wrap:wrap; align-items:end; gap:12px; padding-bottom:16px; border-bottom:1px solid var(--line) }
+  label { display:grid; gap:3px; color:var(--sub); font-size:14px }
+  .search { flex:1; min-width:min(100%,225px) }
+  input,select { border:1px solid #9eaFA2; border-radius:6px; background:#fff; padding:8px 12px; height:42px; width:100% }
+  .filters select { min-width:120px }
+  .count { color:var(--sub); font-size:14px; margin:14px 0 }
+  .grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:20px }
+  .card { display:block; padding:0; text-align:left; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#fff }
+  .card:hover,.card:focus-visible { border-color:var(--green); box-shadow:0 5px 16px #183a2914 }
+  .info { display:grid; padding:12px 16px 15px }
+  .name { font-size:20px; font-weight:700 }
+  .meta { display:flex; justify-content:space-between; gap:6px; color:var(--sub); font-size:13px }
+  .poster { position:relative; display:flex; align-items:center; overflow:hidden; isolation:isolate; padding:7%; width:100%; aspect-ratio:1.88; background:var(--bg); color:var(--fg); }
+  .poster::before,.poster::after { content:""; position:absolute; z-index:-1; pointer-events:none }
+  .poster b { display:block; font:800 clamp(24px,3vw,42px)/1.08 "STSong","SimSun",serif; white-space:pre-line; letter-spacing:.08em }
+  .leaf { --bg:#d7e6a9; --fg:#183e2b }
+  .leaf::before { width:55%; height:160%; right:-3%; top:-25%; border-radius:70% 0 70% 0; background:repeating-radial-gradient(ellipse at right,#2e7452 0 9%,#89b975 10% 12%,#2e7452 13% 16%); transform:rotate(25deg) }
+  .moon { --bg:#24344d; --fg:#fff3cc }
+  .moon::before { width:46%; aspect-ratio:1; right:5%; top:9%; border-radius:50%; background:repeating-linear-gradient(0deg,#ffc669 0 7px,#f0a95e 7px 9px) }
+  .moon::after { inset:68% 0 0 40%; background:repeating-linear-gradient(-16deg,transparent 0 8px,#24344d 9px 14px) }
+  .print { --bg:#a63a28; --fg:#fff3db }
+  .print::before { width:42%; height:160%; right:4%; top:-22%; background:repeating-linear-gradient(90deg,#f3b88e 0 4px,transparent 5px 11px); transform:rotate(24deg) }
+  .tide { --bg:#c6e3ea; --fg:#164861 }
+  .tide::before { width:70%; aspect-ratio:1; right:-16%; bottom:-72%; border-radius:50%; background:repeating-radial-gradient(circle,#257895 0 6%,#c6e3ea 7% 9%) }
+  .ink { --bg:#ede1c4; --fg:#453b38 }
+  .ink::before { width:42%; aspect-ratio:1; right:5%; border-radius:50%; border:12px double #866d56; background:radial-gradient(ellipse at 90% 70%,#866d56 0 28%,transparent 29%) }
+  .stage { --bg:#f3bb95; --fg:#4e243f }
+  .stage::before { width:55%; height:140%; right:-10%; top:-20%; transform:rotate(18deg); background:repeating-conic-gradient(#723c62 0 25%,#f3bb95 0 50%) 0/32px 32px }
+  .blank { text-align:center; padding:32px 12px; border:1px dashed #a8b9aa; border-radius:10px }
+  button.action { padding:8px 17px; border:1px solid var(--green); border-radius:6px; color:var(--green); background:#fff; font-weight:600 }
+  button.primary { background:var(--green); color:white }
+  button.action:disabled { background:#edf0e9; color:#576158; border-color:#b8c3b9; cursor:default }
+  .blank button { margin-top:12px }
+  details { margin-top:28px; border-top:1px solid var(--line); padding-top:12px; color:var(--sub); font-size:14px }
+  summary { cursor:pointer; width:fit-content }
+  .review { display:flex; align-items:end; flex-wrap:wrap; gap:12px; margin-top:10px }
+  dialog { width:min(510px,calc(100vw - 32px)); max-height:88dvh; border:1px solid var(--line); border-radius:14px; padding:0; color:var(--ink); background:var(--paper) }
+  dialog::backdrop { background:#12291fc7 }
+  .dialog-body { padding:20px; display:grid; gap:12px }
+  .dialog-body h2 { font-size:25px; line-height:1.35 }
+  dl { display:grid; grid-template-columns:max-content 1fr; gap:5px 16px; margin:0; font-size:14px }
+  dt { color:var(--sub) } dd { margin:0; overflow-wrap:anywhere }
+  .row { display:flex; flex-wrap:wrap; gap:9px; align-items:center }
+  .message { font-size:14px; color:var(--sub) }
+  @media(max-width:800px) { .grid { grid-template-columns:repeat(2,minmax(0,1fr)) } }
+  @media(max-width:520px) { .grid { grid-template-columns:1fr; gap:14px } .filters label:not(.search) { flex:1 } .search { flex-basis:100% } .filters select { min-width:0 } .poster b { font-size:36px } }
+</style>
+<header><div class="wrap"><span class="brand"><i class="mark" aria-hidden="true"></i>一键成艺</span><span class="badge">待确认原型 · 模拟数据</span></div></header>
+<main class="wrap">
+  <section class="intro"><h1>模板社区</h1><p>挑选一张已发布的模板，查看来源，或复制到自己的工作台。</p></section>
+  <section aria-label="查找模板">
+    <div class="filters">
+      <label class="search">搜索模板<input id="query" type="search" placeholder="输入模板名称或发布者"></label>
+      <label>作品类型<select id="scenario"><option value="">全部类型</option><option>海报</option><option>公众号配图</option></select></label>
+      <label>设计风格<select id="style"><option value="">全部风格</option></select></label>
+    </div>
+    <p id="count" class="count" role="status"></p>
+    <div id="list" class="grid"></div>
+    <div id="empty" class="blank" hidden><h2>没有匹配的模板</h2><p>试试其他关键词，或清除筛选查看全部模板。</p><button id="reset" class="action">清除筛选</button></div>
+    <div id="error" class="blank" hidden><h2>模板列表加载失败</h2><p>已保留你的搜索和筛选条件。</p><button id="retry" class="action">重试加载</button></div>
+  </section>
+  <details><summary>原型演示设置</summary><div class="review">
+    <label>模拟身份<select id="identity"><option value="member">已登录成员</option><option value="guest">游客</option></select></label>
+    <button class="action" id="fail">模拟列表加载失败</button>
+  </div></details>
+</main>
+<dialog id="detail" aria-labelledby="dialogTitle">
+  <div id="cover"></div><div class="dialog-body">
+    <p id="kind" class="type"></p><h2 id="dialogTitle" tabindex="-1"></h2>
+    <dl><dt>发布来源</dt><dd id="author"></dd><dt>发布版本</dt><dd id="version"></dd><dt>使用权限</dt><dd id="rights"></dd></dl>
+    <p id="hint" class="message" role="status"></p>
+    <label id="rename" hidden>副本名称<input id="draftName" maxlength="60"></label>
+    <div class="row"><button class="action primary" id="copy"></button><button class="action" id="back">返回列表</button></div>
+  </div>
+</dialog>
+<script>
+  'use strict';
+  // 本页只使用虚构的发布样本。副本仅存在于当前页面的内存中。
+  const samples = [
+    {id:'spring', name:'春日植物观察', art:'春日\n观察', cover:'leaf', scenario:'海报', style:'清新', author:'自然观察社', version:2, copyable:true},
+    {id:'night', name:'天文夜谈', art:'天文\n夜谈', cover:'moon', scenario:'海报', style:'现代', author:'星野编辑部', version:1, copyable:true},
+    {id:'press', name:'校园独立书展', art:'独立\n书展', cover:'print', scenario:'公众号配图', style:'复古', author:'纸上工作室', version:3, copyable:false},
+    {id:'tide', name:'海边来信', art:'海边\n来信', cover:'tide', scenario:'公众号配图', style:'不对称', author:'潮汐刊物', version:1, copyable:true},
+    {id:'ink', name:'山水小展', art:'山水\n小展', cover:'ink', scenario:'海报', style:'典雅', author:'山水画社', version:2, copyable:true},
+    {id:'stage', name:'周末即兴剧场', art:'即兴\n剧场', cover:'stage', scenario:'公众号配图', style:'活泼', author:'剧场通讯', version:1, copyable:true}
+  ];
+  const byId = id => document.getElementById(id);
+  const drafts = new Map();
+  let selection, activeDraft, state = 'ready', timer;
+  function make(tag, className, text) {
+    const el = document.createElement(tag);
+    el.className = className;
+    if (text !== undefined) el.textContent = text;
+    return el;
+  }
+  function poster(item) {
+    const image = make('span', 'poster ' + item.cover);
+    image.setAttribute('aria-hidden', 'true');
+    image.append(make('b', '', item.art));
+    return image;
+  }
+  function card(item) {
+    const button = make('button', 'card');
+    button.dataset.id = item.id;
+    button.setAttribute('aria-label', '查看' + item.name + '详情');
+    const info = make('span', 'info');
+    const meta = make('span', 'meta');
+    meta.append(make('span', '', item.author), make('span', '', item.copyable ? '可复制' : '仅浏览'));
+    info.append(make('span', 'type', item.scenario + ' / ' + item.style), make('strong', 'name', item.name), meta);
+    button.append(poster(item), info);
+    button.onclick = () => openDetail(item);
+    return button;
+  }
+  function renderList() {
+    const q = byId('query').value.trim().toLowerCase();
+    const matches = samples.filter(item =>
+      (item.name + ' ' + item.author).toLowerCase().includes(q) &&
+      (!byId('scenario').value || item.scenario === byId('scenario').value) &&
+      (!byId('style').value || item.style === byId('style').value));
+    const ready = state === 'ready';
+    byId('list').replaceChildren(...(ready ? matches.map(card) : []));
+    byId('empty').hidden = !ready || matches.length > 0;
+    byId('error').hidden = state !== 'error';
+    byId('count').textContent = ready ? '共 ' + matches.length + ' 张模板' : state === 'loading' ? '正在加载模板…' : '加载失败';
+  }
+  function loadList() {
+    clearTimeout(timer);
+    state = 'loading'; renderList();
+    timer = setTimeout(() => { state = 'ready'; renderList(); }, 300);
+  }
+  function detailView() {
+    const item = selection;
+    const guest = byId('identity').value === 'guest';
+    byId('cover').replaceChildren(poster(item));
+    byId('kind').textContent = activeDraft ? '我的模板工作台 · 模拟副本' : item.scenario + ' / ' + item.style;
+    byId('dialogTitle').textContent = activeDraft ? activeDraft.name : item.name;
+    byId('author').textContent = item.author + ' · ' + item.name;
+    byId('version').textContent = 'v' + item.version;
+    byId('rights').textContent = activeDraft ? '仅自己可见' : item.copyable ? '允许复制为私有模板草稿' : '仅供浏览';
+    const hint = activeDraft ? '副本保存在本次演示中，刷新后清空。' :
+      !item.copyable ? '发布者开放了预览，未开放复制。' : guest ? '游客可预览。切换至模拟成员后可复制。' : '复制会保留来源与版本，并进入自己的模板工作台。';
+    byId('hint').textContent = hint;
+    byId('rename').hidden = !activeDraft;
+    if (activeDraft) byId('draftName').value = activeDraft.name;
+    byId('copy').disabled = !item.copyable;
+    byId('copy').textContent = activeDraft ? '保存副本名称' : !item.copyable ? '仅可浏览' :
+      guest ? '模拟登录' : drafts.has(item.id) ? '打开本次副本' : '复制到我的工作台';
+  }
+  function openDetail(item) {
+    selection = item; activeDraft = null; detailView();
+    byId('detail').showModal(); byId('dialogTitle').focus();
+  }
+  byId('copy').onclick = () => {
+    if (!selection.copyable) return;
+    if (byId('identity').value === 'guest') {
+      byId('identity').value = 'member'; detailView(); return;
+    }
+    if (activeDraft) {
+      const name = byId('draftName').value.trim();
+      if (!name) { byId('hint').textContent = '请输入副本名称。'; byId('draftName').focus(); return; }
+      activeDraft.name = name; detailView(); byId('hint').textContent = '副本名称已保存在本次演示中。'; return;
+    }
+    if (!drafts.has(selection.id)) drafts.set(selection.id, {name:selection.name + '（副本）'});
+    activeDraft = drafts.get(selection.id); detailView(); byId('dialogTitle').focus();
+  };
+  byId('back').onclick = () => byId('detail').close();
+  byId('reset').onclick = () => {
+    for (const id of ['query','scenario','style']) byId(id).value = '';
+    renderList(); byId('query').focus();
+  };
+  byId('fail').onclick = () => { clearTimeout(timer); state = 'error'; renderList(); byId('retry').focus(); };
+  byId('retry').onclick = () => { loadList(); byId('query').focus(); };
+  for (const item of samples) byId('style').add(new Option(item.style));
+  byId('query').oninput = renderList;
+  byId('scenario').onchange = byId('style').onchange = renderList;
+  loadList();
+</script>
+</html>
