@@ -411,6 +411,14 @@ def _complete_login(service, connection, session_id, row, payload):
                 f"UPDATE {table} SET owner_session_id=? WHERE owner_session_id=?",
                 (row["workspace_id"], session_id),
             )
+        if connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name='projects'"
+        ).fetchone():
+            # Multi-page projects follow their page tasks into the account workspace.
+            connection.execute(
+                "UPDATE projects SET owner_session_id=? WHERE owner_session_id=?",
+                (row["workspace_id"], session_id),
+            )
         if has_template_drafts:
             connection.execute(
                 "UPDATE template_drafts SET owner_id=? WHERE owner_id=?",

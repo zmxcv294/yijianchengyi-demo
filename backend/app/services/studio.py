@@ -92,10 +92,12 @@ class Studio:
         from app.services.layouts import initialize as initialize_layouts
         from app.services.management import initialize as initialize_management
         from app.services.materials import initialize as initialize_materials
+        from app.services.projects import initialize as initialize_projects
         from app.services.template_workbench import initialize as initialize_workbench
 
         initialize_accounts(self.db)
         initialize_management(self.db)
+        initialize_projects(self.db)
         initialize_materials(self.db)
         initialize_layouts(self.db)
         initialize_workbench(self.db)

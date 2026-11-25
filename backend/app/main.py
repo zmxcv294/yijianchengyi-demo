@@ -86,6 +86,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     from app.api.materials_v2 import router as materials_router
     from app.api.notifications_v2 import router as notifications_router
     from app.api.operations_v2 import router as operations_router
+    from app.api.projects_v2 import router as projects_router
     from app.api.studio import router as studio_router
     from app.api.template_workbench_v2 import router as workbench_router
     from app.api.templates import router as templates_router
@@ -100,6 +101,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     application.include_router(layouts_router)
     application.include_router(workbench_router)
     application.include_router(operations_router)
+    application.include_router(projects_router)
 
     @application.get("/", include_in_schema=False)
     @application.get("/create", include_in_schema=False)

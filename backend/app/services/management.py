@@ -24,8 +24,12 @@ def view(connection, task):
     active = connection.execute(
         "SELECT * FROM jobs WHERE task_id=? AND status IN ('queued','running')", (task["id"],)
     ).fetchone()
+    page = connection.execute(
+        "SELECT project_id FROM project_pages WHERE task_id=?", (task["id"],)
+    ).fetchone()
     return {
         **task,
+        "projectId": page["project_id"] if page else None,
         "displayName": label["display_name"] if label else None,
         "managementRevision": label["management_revision"] if label else 0,
         "activeJob": job_payload(active) if active else None,
@@ -66,34 +70,52 @@ def rename(service, owner, identifier, payload):
         return view(connection, task)
 
 
+def copy_in(connection, owner, identifier, revision):
+    """Copy one task inside the caller's transaction (also used by project pages)."""
+    source = task_payload(owned_row(connection, "tasks", identifier, owner))
+    revision_matches(source, revision)
+    label = view(connection, source)["displayName"] or source["fields"]["title"] or "未命名作品"
+    task = dict(source)
+    stamp = now()
+    task.update(
+        id=str(uuid4()), revision=1, analysis=None, analysisMode=None,
+        confirmedRevision=None, previewAssetId=None, previewRevision=None,
+        phase="draft", lastError=None, createdAt=stamp, updatedAt=stamp,
+    )
+    save_task(connection, task, owner, insert=True)
+    layout = connection.execute("SELECT template_id,document_json FROM task_layouts WHERE task_id=?", (identifier,)).fetchone()
+    if layout:
+        connection.execute("INSERT INTO task_layouts VALUES (?,?,?)", (task["id"], layout["template_id"], layout["document_json"]))
+    connection.execute("INSERT INTO task_labels VALUES (?,?,1)", (task["id"], f"{label[:74]}（副本）"))
+    return task
+
+
 def copy_task(service, owner, identifier, revision):
     with service.db.transaction() as connection:
-        source = task_payload(owned_row(connection, "tasks", identifier, owner))
-        revision_matches(source, revision)
-        label = view(connection, source)["displayName"] or source["fields"]["title"] or "未命名作品"
-        task = dict(source)
-        stamp = now()
-        task.update(
-            id=str(uuid4()), revision=1, analysis=None, analysisMode=None,
-            confirmedRevision=None, previewAssetId=None, previewRevision=None,
-            phase="draft", lastError=None, createdAt=stamp, updatedAt=stamp,
-        )
-        save_task(connection, task, owner, insert=True)
-        layout = connection.execute("SELECT template_id,document_json FROM task_layouts WHERE task_id=?", (identifier,)).fetchone()
-        if layout:
-            connection.execute("INSERT INTO task_layouts VALUES (?,?,?)", (task["id"], layout["template_id"], layout["document_json"]))
-        connection.execute("INSERT INTO task_labels VALUES (?,?,1)", (task["id"], f"{label[:74]}（副本）"))
-        return view(connection, task)
+        return view(connection, copy_in(connection, owner, identifier, revision))
+
+
+def delete_in(connection, owner, identifier, revision):
+    """Delete one task inside the caller's transaction (also used by project pages)."""
+    task = task_payload(owned_row(connection, "tasks", identifier, owner))
+    revision_matches(task, revision)
+    require(
+        view(connection, task)["activeJob"] is None, 409, "TASK_BUSY",
+        "作品正在生成，请等待任务结束后删除",
+    )
+    page = connection.execute(
+        "SELECT project_id FROM project_pages WHERE task_id=?", (identifier,)
+    ).fetchone()
+    connection.execute("DELETE FROM jobs WHERE task_id=? AND owner_session_id=?", (identifier, owner))
+    # project_pages, task_layouts and task_labels rows cascade with the task.
+    connection.execute("DELETE FROM tasks WHERE id=? AND owner_session_id=?", (identifier, owner))
+    # Uploaded and preview assets remain private to their owner. Copies may reuse them.
+    if page:
+        from app.services.projects import renumber_and_bump
+
+        renumber_and_bump(connection, page["project_id"])
 
 
 def delete_task(service, owner, identifier, revision):
     with service.db.transaction() as connection:
-        task = task_payload(owned_row(connection, "tasks", identifier, owner))
-        revision_matches(task, revision)
-        require(
-            view(connection, task)["activeJob"] is None, 409, "TASK_BUSY",
-            "作品正在生成，请等待任务结束后删除",
-        )
-        connection.execute("DELETE FROM jobs WHERE task_id=? AND owner_session_id=?", (identifier, owner))
-        connection.execute("DELETE FROM tasks WHERE id=? AND owner_session_id=?", (identifier, owner))
-        # Uploaded and preview assets remain private to their owner. Copies may reuse them.
+        delete_in(connection, owner, identifier, revision)
