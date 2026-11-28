@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 import AppIcon from '../components/AppIcon.vue'
 import MaterialPicker from '../components/MaterialPicker.vue'
 import LayoutEditor from '../components/LayoutEditor.vue'
@@ -9,6 +9,9 @@ import { fieldKeys, fieldLabels, styleLabels } from '../api/types'
 import { useServiceStore } from '../stores/service'
 const c = useCreator()
 const service = useServiceStore()
+const route = useRoute()
+/** 在项目上下文里打开时，非空；用于"返回项目"和锁定作品类型。 */
+const projectId = computed(() => (typeof route.params.projectId === 'string' ? route.params.projectId : ''))
 const { task, draft, template, visibleTemplates, loading, busy, operation, error, requestId, conflict,
   saveError, dirty, recovered, recoveryText, checked, job, waitLong, step, currentPreview, canConfirm, saveLabel, progressLabel, sessionLost, crossSessionRecovery, restoringJob, styleFilter, recommendedIds, beforeFields, proposedFields, exportScale } = c
 const zoomOpen = ref(false)
@@ -22,7 +25,7 @@ const imageUrl = computed(() => draft.assetIds[0] ? `/api/assets/${draft.assetId
 </script>
 <template>
   <div class="page creator-page">
-    <div class="creator-heading"><div><RouterLink to="/" class="back-link"><AppIcon name="back" :size="16" />返回工作台</RouterLink><h1>{{ task?.displayName || task?.fields.title || '开始一份新创作' }}</h1></div><div class="creator-heading-actions"><span :class="['save-state', { unsaved: dirty || saveError || conflict }]"><span :class="{ spinner: c.saving.value }" /><AppIcon v-if="!c.saving.value && !dirty && task" name="check" :size="15" />{{ saveLabel }}</span><button class="button outline compact" :disabled="busy || conflict || sessionLost || !draft.rawText.trim()" @click="c.save">保存草稿</button></div></div>
+    <div class="creator-heading"><div><RouterLink :to="projectId ? '/projects/' + projectId : '/'" class="back-link"><AppIcon name="back" :size="16" />{{ projectId ? '返回项目' : '返回工作台' }}</RouterLink><h1>{{ task?.displayName || task?.fields.title || '开始一份新创作' }}</h1></div><div class="creator-heading-actions"><span :class="['save-state', { unsaved: dirty || saveError || conflict }]"><span :class="{ spinner: c.saving.value }" /><AppIcon v-if="!c.saving.value && !dirty && task" name="check" :size="15" />{{ saveLabel }}</span><button class="button outline compact" :disabled="busy || conflict || sessionLost || !draft.rawText.trim()" @click="c.save">保存草稿</button></div></div>
     <ol class="stepper" aria-label="创作步骤"><li v-for="(label, index) in ['输入与推荐', '补充与确认', '预览与下载']" :key="label" :class="{ current: step === index + 1, complete: step > index + 1 }"><button :disabled="busy || (index > 0 && !task?.analysis)" @click="step = index + 1"><span class="step-dot"><AppIcon v-if="step > index + 1" name="check" :size="14" /><template v-else>{{ index + 1 }}</template></span>{{ label }}</button></li></ol>
     <div v-if="error" class="error-card creator-error" role="alert"><AppIcon name="warning" /><div><strong>{{ error }}</strong><small v-if="requestId">请求编号：{{ requestId }}</small><button v-if="sessionLost" class="text-button" @click="c.reconnect">重新连接会话</button><button v-else-if="conflict" class="text-button" @click="c.reloadServer">重新载入服务器版本</button><button v-else-if="job || task?.phase === 'rendering'" class="text-button" @click="c.retryJob">继续查看任务</button><button v-else-if="saveError" class="text-button" @click="c.save">重试保存</button><button v-else-if="loading || !visibleTemplates.length" class="text-button" @click="c.initialize(task?.id)">重新连接</button><button class="text-button" @click="error = ''">关闭提示</button></div></div>
     <div v-if="recovered" class="recovery-card"><strong>{{ crossSessionRecovery ? '已建立新会话，请选择是否复制原文字' : conflict ? '已保留本地修改' : '发现上次未保存的内容' }}</strong><p>{{ crossSessionRecovery ? '原会话的作品和图片不会自动带入。选择复制文字后，才会建立新会话的草稿；如需原图片，请重新上传。' : '本地副本只属于当前会话。可以恢复到编辑区，也可以展开复制文本后，再决定使用哪个版本。' }}</p><details><summary>查看保留的内容</summary><textarea :value="recoveryText" readonly aria-label="本地保留的内容" /></details><div class="inline-actions"><button v-if="!conflict && !sessionLost" class="button outline compact" @click="c.restore">{{ crossSessionRecovery ? '复制文字到新会话' : '恢复到编辑区' }}</button><button class="text-button" @click="c.discardRecovery">忽略这份副本</button></div></div>
@@ -32,7 +35,7 @@ const imageUrl = computed(() => draft.assetIds[0] ? `/api/assets/${draft.assetId
         <fieldset :disabled="busy || conflict || sessionLost" class="editor-fieldset">
           <template v-if="step === 1">
             <div class="panel-heading"><div><span class="eyebrow">第一步</span><h2>先说说，你的想法。</h2></div><span class="number-tag">01</span></div>
-            <label class="field-label">作品类型</label><div class="scenario-options"><button :class="{ selected: draft.scenario === 'poster' }" @click="c.changeScenario('poster')"><AppIcon name="file" :size="16" /><span>竖版海报<small>1080 × 1440</small></span></button><button :class="{ selected: draft.scenario === 'article_image' }" @click="c.changeScenario('article_image')"><AppIcon name="image" :size="16" /><span>公众号配图<small>1200 × 675</small></span></button></div>
+            <template v-if="!projectId"><label class="field-label">作品类型</label><div class="scenario-options"><button :class="{ selected: draft.scenario === 'poster' }" @click="c.changeScenario('poster')"><AppIcon name="file" :size="16" /><span>竖版海报<small>1080 × 1440</small></span></button><button :class="{ selected: draft.scenario === 'article_image' }" @click="c.changeScenario('article_image')"><AppIcon name="image" :size="16" /><span>公众号配图<small>1200 × 675</small></span></button></div></template>
             <label class="field-label" for="raw-text">创作内容<span class="required">必填</span></label><p class="field-help">写下标题、正文、时间、地点等信息，也可以从示例开始。</p>
             <textarea id="raw-text" v-model="draft.rawText" class="raw-input" maxlength="10000" placeholder="例如：做一张校园读书会海报。标题：秋日读书会。时间：2026年11月7日14:00。地点：图书馆一楼交流区。正文：带上一本喜欢的书，分享你的阅读故事。" /><div class="input-foot"><span>已填 {{ Array.from(draft.rawText).length }} / 10000 字</span><span>{{ task ? '停止输入 0.8 秒后自动同步' : c.localStorageError.value ? '浏览器暂存不可用，请点击“保存草稿”' : '新稿暂存在此浏览器；保存后进入历史作品' }}</span></div>
             <div v-if="!task" class="sample-actions"><span>试试示例</span><button class="sample-chip" @click="c.sample(true)">完整活动文案<AppIcon name="arrow" :size="13" /></button><button class="sample-chip" @click="c.sample(false)">缺失信息文案<AppIcon name="arrow" :size="13" /></button></div>
