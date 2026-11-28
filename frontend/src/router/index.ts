@@ -14,6 +14,16 @@ const router = createRouter({
       component: () => import('../pages/CreatePage.vue')
     },
     {
+      path: '/projects/:projectId',
+      name: 'Project',
+      component: () => import('../pages/ProjectPage.vue')
+    },
+    {
+      path: '/projects/:projectId/pages/:taskId',
+      name: 'ProjectPageEditor',
+      component: () => import('../pages/CreatePage.vue')
+    },
+    {
       path: '/templates-workbench',
       name: 'TemplateWorkbench',
       component: () => import('../pages/TemplateWorkbenchPage.vue')
